@@ -29,6 +29,8 @@
     display: flex; align-items: center; justify-content: center;
     font-size: 1.6em; font-weight: bold; color: #fff;
     border: 3px solid rgba(255,255,255,0.4);
+    background-size: cover; background-position: center top;
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.6);
   }
   .pname { font-size: 0.9em; font-weight: 600; }
 
@@ -106,14 +108,36 @@
 
 <script>
   const PLAYERS = [
-    { id: 'maradona',  name: 'Maradona',         initials: 'DM', color: '#75AADB' },
-    { id: 'pele',      name: 'Pelé',             initials: 'P',  color: '#FFCC29' },
-    { id: 'r9',        name: 'Ronaldo Nazário',  initials: 'R9', color: '#009C3B' },
-    { id: 'dinho',     name: 'Ronaldinho',       initials: 'R',  color: '#FFDF00' },
-    { id: 'cr7',       name: 'Cristiano Ronaldo',initials: 'CR7',color: '#C8102E' },
-    { id: 'messi',     name: 'Messi',            initials: 'M',  color: '#6CACE4' },
-    { id: 'neymar',    name: 'Neymar',           initials: 'NJ', color: '#FFDF00' },
+    { id: 'maradona', name: 'Maradona',          initials: 'DM', color: '#75AADB', wiki: 'Diego_Maradona' },
+    { id: 'pele',     name: 'Pelé',              initials: 'P',  color: '#FFCC29', wiki: 'Pelé' },
+    { id: 'r9',       name: 'Ronaldo Nazário',   initials: 'R9', color: '#009C3B', wiki: 'Ronaldo_(Brazilian_footballer)' },
+    { id: 'dinho',    name: 'Ronaldinho',        initials: 'R',  color: '#FFDF00', wiki: 'Ronaldinho' },
+    { id: 'cr7',      name: 'Cristiano Ronaldo', initials: 'CR7',color: '#C8102E', wiki: 'Cristiano_Ronaldo' },
+    { id: 'messi',    name: 'Messi',             initials: 'M',  color: '#6CACE4', wiki: 'Lionel_Messi' },
+    { id: 'neymar',   name: 'Neymar',            initials: 'NJ', color: '#FFDF00', wiki: 'Neymar' },
   ];
+
+  // Fetch player photos from Wikipedia (falls back to initials if it fails)
+  async function loadPhotos() {
+    await Promise.all(PLAYERS.map(async p => {
+      try {
+        const r = await fetch(`https://en.wikipedia.org/api/rest_v1/page/summary/${p.wiki}`);
+        const j = await r.json();
+        if (j.thumbnail && j.thumbnail.source) p.img = j.thumbnail.source;
+      } catch (e) { /* ignore, fallback to initials */ }
+    }));
+    renderGrid();
+  }
+
+  function setAvatar(el, p) {
+    el.style.background = p.color;
+    if (p.img) {
+      el.style.backgroundImage = `url("${p.img}")`;
+      el.textContent = '';
+    } else {
+      el.textContent = p.initials;
+    }
+  }
   const WINS = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
 
   let you = null, cpu = null;
@@ -136,9 +160,8 @@
       if (you && !cpu && you.id === p.id) { /* still show as selected but allow re-pick? no */ }
       if (you && !cpu && p.id === you.id) card.classList.add('disabled');
 
-      card.innerHTML = `
-        <div class="avatar" style="background:${p.color}">${p.initials}</div>
-        <div class="pname">${p.name}</div>`;
+      card.innerHTML = `<div class="avatar"></div><div class="pname">${p.name}</div>`;
+      setAvatar(card.querySelector('.avatar'), p);
       card.addEventListener('click', () => choose(p));
       grid.appendChild(card);
     });
@@ -168,11 +191,9 @@
     document.getElementById('select-screen').classList.add('hidden');
     document.getElementById('game-screen').classList.remove('hidden');
 
-    document.getElementById('you-avatar').textContent = you.initials;
-    document.getElementById('you-avatar').style.background = you.color;
+    setAvatar(document.getElementById('you-avatar'), you);
     document.getElementById('you-name').textContent = you.name;
-    document.getElementById('cpu-avatar').textContent = cpu.initials;
-    document.getElementById('cpu-avatar').style.background = cpu.color;
+    setAvatar(document.getElementById('cpu-avatar'), cpu);
     document.getElementById('cpu-name').textContent = cpu.name;
 
     resetBoard();
@@ -205,8 +226,7 @@
     const p = who === 'you' ? you : cpu;
     const av = document.createElement('div');
     av.className = 'avatar';
-    av.style.background = p.color;
-    av.textContent = p.initials;
+    setAvatar(av, p);
     cellBtn.appendChild(av);
     cellBtn.disabled = true;
   }
@@ -284,6 +304,7 @@
   });
 
   renderGrid();
+  loadPhotos();
 </script>
 </body>
 </html>
