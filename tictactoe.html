@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Tic Tac Toe</title>
+<style>
+  body { font-family: system-ui, sans-serif; display: flex; flex-direction: column; align-items: center; background: #1a1a2e; color: #eee; padding: 40px; }
+  h1 { margin: 0 0 10px; }
+  #status { margin: 15px 0; font-size: 1.3em; min-height: 1.4em; }
+  #board { display: grid; grid-template-columns: repeat(3, 100px); grid-gap: 8px; }
+  .cell { width: 100px; height: 100px; background: #16213e; border: none; border-radius: 8px;
+          font-size: 3em; font-weight: bold; color: #eee; cursor: pointer; transition: background 0.15s; }
+  .cell:hover:not(:disabled) { background: #0f3460; }
+  .cell.x { color: #e94560; }
+  .cell.o { color: #4ecca3; }
+  button#reset { margin-top: 20px; padding: 10px 20px; font-size: 1em; background: #e94560;
+                 color: white; border: none; border-radius: 6px; cursor: pointer; }
+  button#reset:hover { background: #c73650; }
+</style>
+</head>
+<body>
+  <h1>Tic Tac Toe</h1>
+  <div id="status">X's turn</div>
+  <div id="board"></div>
+  <button id="reset">New Game</button>
+<script>
+  const board = document.getElementById('board');
+  const status = document.getElementById('status');
+  const wins = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
+  let cells, turn, over;
+
+  function init() {
+    board.innerHTML = '';
+    cells = Array(9).fill('');
+    turn = 'X';
+    over = false;
+    status.textContent = "X's turn";
+    for (let i = 0; i < 9; i++) {
+      const btn = document.createElement('button');
+      btn.className = 'cell';
+      btn.dataset.i = i;
+      btn.addEventListener('click', onClick);
+      board.appendChild(btn);
+    }
+  }
+
+  function onClick(e) {
+    const i = +e.target.dataset.i;
+    if (over || cells[i]) return;
+    cells[i] = turn;
+    e.target.textContent = turn;
+    e.target.classList.add(turn.toLowerCase());
+    e.target.disabled = true;
+    const win = wins.find(([a,b,c]) => cells[a] && cells[a] === cells[b] && cells[b] === cells[c]);
+    if (win) { status.textContent = `${turn} wins!`; over = true; return; }
+    if (cells.every(Boolean)) { status.textContent = "Draw!"; over = true; return; }
+    turn = turn === 'X' ? 'O' : 'X';
+    status.textContent = `${turn}'s turn`;
+  }
+
+  document.getElementById('reset').addEventListener('click', init);
+  init();
+</script>
+</body>
+</html>
