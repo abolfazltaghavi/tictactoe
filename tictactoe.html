@@ -2,64 +2,288 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Tic Tac Toe</title>
+<title>Soccer Tic Tac Toe</title>
 <style>
-  body { font-family: system-ui, sans-serif; display: flex; flex-direction: column; align-items: center; background: #1a1a2e; color: #eee; padding: 40px; }
-  h1 { margin: 0 0 10px; }
-  #status { margin: 15px 0; font-size: 1.3em; min-height: 1.4em; }
-  #board { display: grid; grid-template-columns: repeat(3, 100px); grid-gap: 8px; }
-  .cell { width: 100px; height: 100px; background: #16213e; border: none; border-radius: 8px;
-          font-size: 3em; font-weight: bold; color: #eee; cursor: pointer; transition: background 0.15s; }
-  .cell:hover:not(:disabled) { background: #0f3460; }
-  .cell.x { color: #e94560; }
-  .cell.o { color: #4ecca3; }
-  button#reset { margin-top: 20px; padding: 10px 20px; font-size: 1em; background: #e94560;
-                 color: white; border: none; border-radius: 6px; cursor: pointer; }
-  button#reset:hover { background: #c73650; }
+  * { box-sizing: border-box; }
+  body { font-family: system-ui, sans-serif; margin: 0; min-height: 100vh;
+         background: linear-gradient(135deg, #0b6623 0%, #1a8a3a 100%);
+         color: #fff; display: flex; flex-direction: column; align-items: center; padding: 30px 20px; }
+  h1 { margin: 0 0 6px; font-size: 2em; text-shadow: 2px 2px 4px rgba(0,0,0,0.4); }
+  .sub { opacity: 0.85; margin-bottom: 20px; }
+
+  .screen { width: 100%; max-width: 760px; }
+  .hidden { display: none !important; }
+
+  .pick-title { font-size: 1.2em; margin: 18px 0 10px; text-align: center; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 12px; }
+  .player {
+    background: rgba(255,255,255,0.1); border: 3px solid transparent; border-radius: 12px;
+    padding: 14px 8px; cursor: pointer; text-align: center; transition: all 0.15s;
+    backdrop-filter: blur(4px);
+  }
+  .player:hover { background: rgba(255,255,255,0.2); transform: translateY(-2px); }
+  .player.selected { border-color: #ffd700; background: rgba(255,215,0,0.2); }
+  .player.disabled { opacity: 0.35; cursor: not-allowed; pointer-events: none; }
+  .avatar {
+    width: 70px; height: 70px; border-radius: 50%; margin: 0 auto 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.6em; font-weight: bold; color: #fff;
+    border: 3px solid rgba(255,255,255,0.4);
+  }
+  .pname { font-size: 0.9em; font-weight: 600; }
+
+  button.primary {
+    margin: 20px auto 0; display: block; padding: 12px 28px; font-size: 1.05em;
+    background: #ffd700; color: #0b3d0b; border: none; border-radius: 8px;
+    font-weight: bold; cursor: pointer; transition: transform 0.1s;
+  }
+  button.primary:hover:not(:disabled) { transform: scale(1.05); }
+  button.primary:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  /* Game */
+  .scoreboard { display: flex; justify-content: space-around; align-items: center;
+                width: 100%; max-width: 460px; margin-bottom: 16px; }
+  .side { text-align: center; padding: 10px 14px; border-radius: 10px;
+          background: rgba(0,0,0,0.25); min-width: 130px; transition: box-shadow 0.2s; }
+  .side.active { box-shadow: 0 0 0 3px #ffd700; }
+  .side .avatar { width: 56px; height: 56px; font-size: 1.3em; margin-bottom: 4px; }
+  .side .pname { font-size: 0.85em; }
+  .vs { font-size: 1.4em; font-weight: bold; opacity: 0.7; }
+
+  #status { font-size: 1.15em; min-height: 1.4em; margin-bottom: 12px; text-align: center; }
+
+  #board { display: grid; grid-template-columns: repeat(3, 100px); gap: 8px;
+           margin: 0 auto; padding: 10px; background: rgba(0,0,0,0.3); border-radius: 12px; }
+  .cell {
+    width: 100px; height: 100px; background: #f5f5f5; border: none; border-radius: 8px;
+    cursor: pointer; padding: 0; display: flex; align-items: center; justify-content: center;
+    transition: background 0.15s;
+  }
+  .cell:hover:not(:disabled) { background: #fff; }
+  .cell:disabled { cursor: default; }
+  .cell .avatar { width: 72px; height: 72px; font-size: 1.5em; margin: 0; border-width: 2px; }
+  .cell.win { background: #ffd700 !important; }
+
+  .controls { margin-top: 18px; display: flex; gap: 10px; justify-content: center; }
+  .controls button {
+    padding: 10px 18px; font-size: 0.95em; background: rgba(255,255,255,0.15);
+    color: #fff; border: 2px solid rgba(255,255,255,0.3); border-radius: 8px; cursor: pointer;
+  }
+  .controls button:hover { background: rgba(255,255,255,0.25); }
 </style>
 </head>
 <body>
-  <h1>Tic Tac Toe</h1>
-  <div id="status">X's turn</div>
-  <div id="board"></div>
-  <button id="reset">New Game</button>
-<script>
-  const board = document.getElementById('board');
-  const status = document.getElementById('status');
-  const wins = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
-  let cells, turn, over;
+  <h1>⚽ Soccer Tic Tac Toe</h1>
+  <div class="sub">Pick your legend and face off against the CPU</div>
 
-  function init() {
-    board.innerHTML = '';
-    cells = Array(9).fill('');
-    turn = 'X';
+  <!-- SELECTION SCREEN -->
+  <div id="select-screen" class="screen">
+    <div class="pick-title" id="pick-title">Step 1: Choose your player</div>
+    <div class="grid" id="player-grid"></div>
+    <button class="primary" id="start-btn" disabled>Kick Off ⚽</button>
+  </div>
+
+  <!-- GAME SCREEN -->
+  <div id="game-screen" class="screen hidden">
+    <div class="scoreboard">
+      <div class="side" id="side-you">
+        <div class="avatar" id="you-avatar"></div>
+        <div class="pname" id="you-name"></div>
+      </div>
+      <div class="vs">VS</div>
+      <div class="side" id="side-cpu">
+        <div class="avatar" id="cpu-avatar"></div>
+        <div class="pname" id="cpu-name"></div>
+      </div>
+    </div>
+    <div id="status"></div>
+    <div id="board"></div>
+    <div class="controls">
+      <button id="rematch">Rematch</button>
+      <button id="change">Change Players</button>
+    </div>
+  </div>
+
+<script>
+  const PLAYERS = [
+    { id: 'maradona',  name: 'Maradona',         initials: 'DM', color: '#75AADB' },
+    { id: 'pele',      name: 'Pelé',             initials: 'P',  color: '#FFCC29' },
+    { id: 'r9',        name: 'Ronaldo Nazário',  initials: 'R9', color: '#009C3B' },
+    { id: 'dinho',     name: 'Ronaldinho',       initials: 'R',  color: '#FFDF00' },
+    { id: 'cr7',       name: 'Cristiano Ronaldo',initials: 'CR7',color: '#C8102E' },
+    { id: 'messi',     name: 'Messi',            initials: 'M',  color: '#6CACE4' },
+    { id: 'neymar',    name: 'Neymar',           initials: 'NJ', color: '#FFDF00' },
+  ];
+  const WINS = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
+
+  let you = null, cpu = null;
+  let cells, turn, over; // turn: 'you' | 'cpu'
+
+  // ---------- Selection ----------
+  const grid = document.getElementById('player-grid');
+  const pickTitle = document.getElementById('pick-title');
+  const startBtn = document.getElementById('start-btn');
+
+  function renderGrid() {
+    grid.innerHTML = '';
+    PLAYERS.forEach(p => {
+      const card = document.createElement('div');
+      card.className = 'player';
+      if (you && you.id === p.id && !cpu) card.classList.add('selected');
+      if (cpu && cpu.id === p.id) card.classList.add('selected');
+      if (you && !cpu && you.id === p.id) card.classList.add('selected');
+      // Disable already-picked-by-you when picking opponent
+      if (you && !cpu && you.id === p.id) { /* still show as selected but allow re-pick? no */ }
+      if (you && !cpu && p.id === you.id) card.classList.add('disabled');
+
+      card.innerHTML = `
+        <div class="avatar" style="background:${p.color}">${p.initials}</div>
+        <div class="pname">${p.name}</div>`;
+      card.addEventListener('click', () => choose(p));
+      grid.appendChild(card);
+    });
+  }
+
+  function choose(p) {
+    if (!you) {
+      you = p;
+      pickTitle.textContent = 'Step 2: Choose your opponent';
+    } else if (!cpu) {
+      if (p.id === you.id) return;
+      cpu = p;
+      startBtn.disabled = false;
+    }
+    renderGrid();
+  }
+
+  startBtn.addEventListener('click', startGame);
+
+  // ---------- Game ----------
+  const boardEl = document.getElementById('board');
+  const statusEl = document.getElementById('status');
+  const sideYou = document.getElementById('side-you');
+  const sideCpu = document.getElementById('side-cpu');
+
+  function startGame() {
+    document.getElementById('select-screen').classList.add('hidden');
+    document.getElementById('game-screen').classList.remove('hidden');
+
+    document.getElementById('you-avatar').textContent = you.initials;
+    document.getElementById('you-avatar').style.background = you.color;
+    document.getElementById('you-name').textContent = you.name;
+    document.getElementById('cpu-avatar').textContent = cpu.initials;
+    document.getElementById('cpu-avatar').style.background = cpu.color;
+    document.getElementById('cpu-name').textContent = cpu.name;
+
+    resetBoard();
+  }
+
+  function resetBoard() {
+    cells = Array(9).fill(null);
+    turn = 'you';
     over = false;
-    status.textContent = "X's turn";
+    boardEl.innerHTML = '';
     for (let i = 0; i < 9; i++) {
       const btn = document.createElement('button');
       btn.className = 'cell';
       btn.dataset.i = i;
-      btn.addEventListener('click', onClick);
-      board.appendChild(btn);
+      btn.addEventListener('click', () => onPlayerMove(i));
+      boardEl.appendChild(btn);
     }
+    updateStatus();
   }
 
-  function onClick(e) {
-    const i = +e.target.dataset.i;
-    if (over || cells[i]) return;
-    cells[i] = turn;
-    e.target.textContent = turn;
-    e.target.classList.add(turn.toLowerCase());
-    e.target.disabled = true;
-    const win = wins.find(([a,b,c]) => cells[a] && cells[a] === cells[b] && cells[b] === cells[c]);
-    if (win) { status.textContent = `${turn} wins!`; over = true; return; }
-    if (cells.every(Boolean)) { status.textContent = "Draw!"; over = true; return; }
-    turn = turn === 'X' ? 'O' : 'X';
-    status.textContent = `${turn}'s turn`;
+  function updateStatus() {
+    sideYou.classList.toggle('active', turn === 'you' && !over);
+    sideCpu.classList.toggle('active', turn === 'cpu' && !over);
+    if (!over) statusEl.textContent = turn === 'you' ? `Your move, ${you.name}` : `${cpu.name} is thinking...`;
   }
 
-  document.getElementById('reset').addEventListener('click', init);
-  init();
+  function placeMark(i, who) {
+    cells[i] = who;
+    const cellBtn = boardEl.children[i];
+    const p = who === 'you' ? you : cpu;
+    const av = document.createElement('div');
+    av.className = 'avatar';
+    av.style.background = p.color;
+    av.textContent = p.initials;
+    cellBtn.appendChild(av);
+    cellBtn.disabled = true;
+  }
+
+  function onPlayerMove(i) {
+    if (over || cells[i] || turn !== 'you') return;
+    placeMark(i, 'you');
+    if (checkEnd()) return;
+    turn = 'cpu';
+    updateStatus();
+    setTimeout(cpuMove, 450);
+  }
+
+  function cpuMove() {
+    const i = bestMove(cells);
+    placeMark(i, 'cpu');
+    if (checkEnd()) return;
+    turn = 'you';
+    updateStatus();
+  }
+
+  function checkEnd() {
+    const w = WINS.find(([a,b,c]) => cells[a] && cells[a] === cells[b] && cells[b] === cells[c]);
+    if (w) {
+      over = true;
+      w.forEach(idx => boardEl.children[idx].classList.add('win'));
+      const winner = cells[w[0]] === 'you' ? you.name + ' wins! 🏆' : cpu.name + ' wins! 🏆';
+      statusEl.textContent = winner;
+      [...boardEl.children].forEach(c => c.disabled = true);
+      sideYou.classList.remove('active'); sideCpu.classList.remove('active');
+      return true;
+    }
+    if (cells.every(Boolean)) {
+      over = true;
+      statusEl.textContent = "It's a draw! 🤝";
+      sideYou.classList.remove('active'); sideCpu.classList.remove('active');
+      return true;
+    }
+    return false;
+  }
+
+  // Minimax — CPU is 'cpu' (maximizer), human is 'you'
+  function winnerOf(b) {
+    for (const [a,b1,c] of WINS) if (b[a] && b[a] === b[b1] && b[b1] === b[c]) return b[a];
+    if (b.every(Boolean)) return 'draw';
+    return null;
+  }
+  function minimax(b, player) {
+    const w = winnerOf(b);
+    if (w === 'cpu') return { score: 10 };
+    if (w === 'you') return { score: -10 };
+    if (w === 'draw') return { score: 0 };
+    const moves = [];
+    for (let i = 0; i < 9; i++) {
+      if (!b[i]) {
+        b[i] = player;
+        const res = minimax(b, player === 'cpu' ? 'you' : 'cpu');
+        moves.push({ i, score: res.score });
+        b[i] = null;
+      }
+    }
+    if (player === 'cpu') return moves.reduce((a,m) => m.score > a.score ? m : a, { score: -Infinity });
+    return moves.reduce((a,m) => m.score < a.score ? m : a, { score: Infinity });
+  }
+  function bestMove(b) { return minimax(b.slice(), 'cpu').i; }
+
+  document.getElementById('rematch').addEventListener('click', resetBoard);
+  document.getElementById('change').addEventListener('click', () => {
+    you = null; cpu = null;
+    startBtn.disabled = true;
+    pickTitle.textContent = 'Step 1: Choose your player';
+    document.getElementById('game-screen').classList.add('hidden');
+    document.getElementById('select-screen').classList.remove('hidden');
+    renderGrid();
+  });
+
+  renderGrid();
 </script>
 </body>
 </html>
