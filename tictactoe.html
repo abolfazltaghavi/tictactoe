@@ -2,33 +2,51 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Soccer Tic Tac Toe</title>
+<title>FC Barcelona Tic Tac Toe</title>
 <style>
   * { box-sizing: border-box; }
   body { font-family: system-ui, sans-serif; margin: 0; min-height: 100vh;
-         background: linear-gradient(135deg, #0b6623 0%, #1a8a3a 100%);
-         color: #fff; display: flex; flex-direction: column; align-items: center; padding: 30px 20px; }
-  h1 { margin: 0 0 6px; font-size: 2em; text-shadow: 2px 2px 4px rgba(0,0,0,0.4); }
-  .sub { opacity: 0.85; margin-bottom: 20px; }
+         background: linear-gradient(135deg, #004D98 0%, #001a3a 50%, #A50044 100%);
+         color: #fff; display: flex; flex-direction: column; align-items: center; padding: 30px 20px;
+         position: relative; overflow-x: hidden; }
+  body::before {
+    content: ''; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+    background:
+      repeating-linear-gradient(90deg, rgba(165,0,68,0.08) 0px, rgba(165,0,68,0.08) 60px, rgba(0,77,152,0.08) 60px, rgba(0,77,152,0.08) 120px);
+    pointer-events: none; z-index: 0;
+  }
+  body > * { position: relative; z-index: 1; }
+  .barca-crest {
+    width: 80px; height: 80px; margin-bottom: 10px; filter: drop-shadow(0 4px 12px rgba(0,0,0,0.5));
+  }
+  h1 { margin: 0 0 6px; font-size: 2em; text-shadow: 2px 2px 4px rgba(0,0,0,0.6);
+       background: linear-gradient(90deg, #EDBB00, #fff, #EDBB00);
+       -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+       background-clip: text; }
+  .sub { opacity: 0.85; margin-bottom: 20px; font-style: italic; letter-spacing: 0.5px; }
 
   .screen { width: 100%; max-width: 760px; }
   .hidden { display: none !important; }
 
-  .pick-title { font-size: 1.2em; margin: 18px 0 10px; text-align: center; }
+  .pick-title { font-size: 1.2em; margin: 18px 0 10px; text-align: center;
+                color: #EDBB00; text-shadow: 1px 1px 3px rgba(0,0,0,0.4); }
   .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 12px; }
   .player {
-    background: rgba(255,255,255,0.1); border: 3px solid transparent; border-radius: 12px;
-    padding: 14px 8px; cursor: pointer; text-align: center; transition: all 0.15s;
-    backdrop-filter: blur(4px);
+    background: linear-gradient(135deg, rgba(0,77,152,0.3), rgba(165,0,68,0.3));
+    border: 3px solid rgba(255,255,255,0.15); border-radius: 12px;
+    padding: 14px 8px; cursor: pointer; text-align: center; transition: all 0.2s;
+    backdrop-filter: blur(6px);
   }
-  .player:hover { background: rgba(255,255,255,0.2); transform: translateY(-2px); }
-  .player.selected { border-color: #ffd700; background: rgba(255,215,0,0.2); }
+  .player:hover { background: linear-gradient(135deg, rgba(0,77,152,0.5), rgba(165,0,68,0.5));
+                  transform: translateY(-3px); box-shadow: 0 6px 20px rgba(0,0,0,0.3); }
+  .player.selected { border-color: #EDBB00; background: linear-gradient(135deg, rgba(237,187,0,0.25), rgba(237,187,0,0.15));
+                     box-shadow: 0 0 16px rgba(237,187,0,0.3); }
   .player.disabled { opacity: 0.35; cursor: not-allowed; pointer-events: none; }
   .avatar {
     width: 70px; height: 70px; border-radius: 50%; margin: 0 auto 8px;
     display: flex; align-items: center; justify-content: center;
     font-size: 1.6em; font-weight: bold; color: #fff;
-    border: 3px solid rgba(255,255,255,0.4);
+    border: 3px solid rgba(237,187,0,0.5);
     background-size: cover; background-position: center top;
     text-shadow: 1px 1px 2px rgba(0,0,0,0.6);
   }
@@ -36,53 +54,77 @@
 
   button.primary {
     margin: 20px auto 0; display: block; padding: 12px 28px; font-size: 1.05em;
-    background: #ffd700; color: #0b3d0b; border: none; border-radius: 8px;
-    font-weight: bold; cursor: pointer; transition: transform 0.1s;
+    background: linear-gradient(135deg, #EDBB00, #d4a200); color: #1a0a2e; border: none; border-radius: 8px;
+    font-weight: bold; cursor: pointer; transition: all 0.15s;
+    box-shadow: 0 4px 12px rgba(237,187,0,0.3);
   }
-  button.primary:hover:not(:disabled) { transform: scale(1.05); }
+  button.primary:hover:not(:disabled) { transform: scale(1.05); box-shadow: 0 6px 20px rgba(237,187,0,0.5); }
   button.primary:disabled { opacity: 0.4; cursor: not-allowed; }
 
   /* Game */
   .scoreboard { display: flex; justify-content: space-around; align-items: center;
                 width: 100%; max-width: 460px; margin-bottom: 16px; }
   .side { text-align: center; padding: 10px 14px; border-radius: 10px;
-          background: rgba(0,0,0,0.25); min-width: 130px; transition: box-shadow 0.2s; }
-  .side.active { box-shadow: 0 0 0 3px #ffd700; }
+          background: linear-gradient(135deg, rgba(0,77,152,0.4), rgba(165,0,68,0.4));
+          border: 2px solid rgba(255,255,255,0.1);
+          min-width: 130px; transition: all 0.2s; }
+  .side.active { box-shadow: 0 0 0 3px #EDBB00, 0 0 20px rgba(237,187,0,0.3);
+                 border-color: #EDBB00; }
   .side .avatar { width: 56px; height: 56px; font-size: 1.3em; margin-bottom: 4px; }
   .side .pname { font-size: 0.85em; }
-  .vs { font-size: 1.4em; font-weight: bold; opacity: 0.7; }
+  .vs { font-size: 1.4em; font-weight: bold; opacity: 0.7;
+        color: #EDBB00; text-shadow: 0 0 8px rgba(237,187,0,0.4); }
 
   #status { font-size: 1.15em; min-height: 1.4em; margin-bottom: 12px; text-align: center; }
 
   #board { display: grid; grid-template-columns: repeat(3, 100px); gap: 8px;
-           margin: 0 auto; padding: 10px; background: rgba(0,0,0,0.3); border-radius: 12px; }
+           margin: 0 auto; padding: 10px;
+           background: linear-gradient(135deg, rgba(0,77,152,0.5), rgba(165,0,68,0.5));
+           border-radius: 12px; border: 2px solid rgba(237,187,0,0.2);
+           box-shadow: 0 8px 32px rgba(0,0,0,0.3); }
   .cell {
-    width: 100px; height: 100px; background: #f5f5f5; border: none; border-radius: 8px;
+    width: 100px; height: 100px; background: rgba(255,255,255,0.9); border: none; border-radius: 8px;
     cursor: pointer; padding: 0; display: flex; align-items: center; justify-content: center;
-    transition: background 0.15s;
+    transition: all 0.15s;
   }
-  .cell:hover:not(:disabled) { background: #fff; }
+  .cell:hover:not(:disabled) { background: #fff; box-shadow: 0 0 12px rgba(237,187,0,0.3); }
   .cell:disabled { cursor: default; }
   .cell .avatar { width: 72px; height: 72px; font-size: 1.5em; margin: 0; border-width: 2px; }
-  .cell.win { background: #ffd700 !important; }
+  .cell.win { background: linear-gradient(135deg, #EDBB00, #f5d442) !important;
+              box-shadow: 0 0 16px rgba(237,187,0,0.5); }
 
   .controls { margin-top: 18px; display: flex; gap: 10px; justify-content: center; }
   .controls button {
-    padding: 10px 18px; font-size: 0.95em; background: rgba(255,255,255,0.15);
-    color: #fff; border: 2px solid rgba(255,255,255,0.3); border-radius: 8px; cursor: pointer;
+    padding: 10px 18px; font-size: 0.95em;
+    background: linear-gradient(135deg, rgba(0,77,152,0.4), rgba(165,0,68,0.4));
+    color: #fff; border: 2px solid rgba(237,187,0,0.3); border-radius: 8px; cursor: pointer;
+    transition: all 0.15s;
   }
-  .controls button:hover { background: rgba(255,255,255,0.25); }
+  .controls button:hover { background: linear-gradient(135deg, rgba(0,77,152,0.6), rgba(165,0,68,0.6));
+                           border-color: #EDBB00; box-shadow: 0 0 12px rgba(237,187,0,0.2); }
+
+  .barca-watermark {
+    position: fixed; bottom: 20px; right: 20px; width: 120px; opacity: 0.06;
+    pointer-events: none; z-index: 0;
+  }
+  .barca-stripe { position: fixed; top: 0; bottom: 0; width: 100%; pointer-events: none; z-index: 0;
+                  background: repeating-linear-gradient(90deg,
+                    transparent 0%, transparent 14.28%,
+                    rgba(165,0,68,0.03) 14.28%, rgba(165,0,68,0.03) 28.57%);
+  }
 </style>
 </head>
 <body>
-  <h1>⚽ Soccer Tic Tac Toe</h1>
-  <div class="sub">Pick your legend and face off against the CPU</div>
+  <img class="barca-crest" src="https://upload.wikimedia.org/wikipedia/en/thumb/4/47/FC_Barcelona_%28crest%29.svg/800px-FC_Barcelona_%28crest%29.svg.png" alt="FC Barcelona Crest">
+  <h1>FC Barcelona Tic Tac Toe</h1>
+  <div class="sub">Mes que un joc &mdash; Pick your Blaugrana legend</div>
+  <img class="barca-watermark" src="https://upload.wikimedia.org/wikipedia/en/thumb/4/47/FC_Barcelona_%28crest%29.svg/800px-FC_Barcelona_%28crest%29.svg.png" alt="">
 
   <!-- SELECTION SCREEN -->
   <div id="select-screen" class="screen">
     <div class="pick-title" id="pick-title">Step 1: Choose your player</div>
     <div class="grid" id="player-grid"></div>
-    <button class="primary" id="start-btn" disabled>Kick Off ⚽</button>
+    <button class="primary" id="start-btn" disabled>Kick Off</button>
   </div>
 
   <!-- GAME SCREEN -->
@@ -108,13 +150,13 @@
 
 <script>
   const PLAYERS = [
-    { id: 'maradona', name: 'Maradona',          initials: 'DM', color: '#75AADB', wiki: 'Diego_Maradona' },
-    { id: 'pele',     name: 'Pelé',              initials: 'P',  color: '#FFCC29', wiki: 'Pelé' },
-    { id: 'r9',       name: 'Ronaldo Nazário',   initials: 'R9', color: '#009C3B', wiki: 'Ronaldo_(Brazilian_footballer)' },
-    { id: 'dinho',    name: 'Ronaldinho',        initials: 'R',  color: '#FFDF00', wiki: 'Ronaldinho' },
-    { id: 'cr7',      name: 'Cristiano Ronaldo', initials: 'CR7',color: '#C8102E', wiki: 'Cristiano_Ronaldo' },
-    { id: 'messi',    name: 'Messi',             initials: 'M',  color: '#6CACE4', wiki: 'Lionel_Messi' },
-    { id: 'neymar',   name: 'Neymar',            initials: 'NJ', color: '#FFDF00', wiki: 'Neymar' },
+    { id: 'messi',    name: 'Messi',             initials: 'M',  color: '#004D98', wiki: 'Lionel_Messi' },
+    { id: 'dinho',    name: 'Ronaldinho',        initials: 'R10',color: '#A50044', wiki: 'Ronaldinho' },
+    { id: 'xavi',     name: 'Xavi',              initials: 'X',  color: '#004D98', wiki: 'Xavi' },
+    { id: 'iniesta',  name: 'Iniesta',           initials: 'AI', color: '#A50044', wiki: 'Andrés_Iniesta' },
+    { id: 'puyol',    name: 'Puyol',             initials: 'CP', color: '#004D98', wiki: 'Carles_Puyol' },
+    { id: 'r9',       name: 'Ronaldo Nazário',   initials: 'R9', color: '#A50044', wiki: 'Ronaldo_(Brazilian_footballer)' },
+    { id: 'cruyff',   name: 'Cruyff',            initials: 'JC', color: '#EDBB00', wiki: 'Johan_Cruyff' },
   ];
 
   // Fetch player photos from Wikipedia (falls back to initials if it fails)
